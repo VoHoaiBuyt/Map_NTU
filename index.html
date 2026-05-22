@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NTU Map - Sơ đồ & Chỉ đường Đại học Nha Trang</title>
+    
+    <!-- Leaflet Map CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" 
+          crossorigin=""/>
+          
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+    
+    <!-- Custom CSS Styles -->
+    <link rel="stylesheet" href="index.css">
+</head>
+<body>
+
+    <div class="app-container">
+        
+        <!-- Left Sidebar Panel -->
+        <aside class="sidebar" id="sidebar">
+            
+            <!-- Logo & Title Header -->
+            <div class="sidebar-header" id="sidebar-toggle-header">
+                <div class="logo-container">
+                    <div class="logo-icon">
+                        <i class="fa-solid fa-map-location-dot"></i>
+                    </div>
+                    <div class="logo-text">
+                        <h1 id="app-title">NTU Campus Map</h1>
+                        <p id="app-subtitle">Đại học Nha Trang - Đồi La San</p>
+                    </div>
+                </div>
+                
+                <div class="controls-header">
+                    <button class="control-btn" id="theme-toggle-btn" title="Chuyển chế độ tối/sáng">
+                        <i class="fa-solid fa-moon"></i>
+                    </button>
+                    <button class="control-btn" id="lang-toggle-btn" style="margin-left: 8px;">
+                        <i class="fa-solid fa-globe"></i> <span id="lang-text">EN</span>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Navigation Tabs -->
+            <div class="tabs-container">
+                <button class="tab-btn active" id="tab-search-btn" onclick="switchTab('search')">
+                    <i class="fa-solid fa-magnifying-glass mr-1"></i> <span id="tab-label-search">Tìm kiếm</span>
+                </button>
+                <button class="tab-btn" id="tab-route-btn" onclick="switchTab('route')">
+                    <i class="fa-solid fa-route mr-1"></i> <span id="tab-label-route">Chỉ đường</span>
+                </button>
+                <button class="tab-btn" id="tab-layers-btn" onclick="switchTab('layers')">
+                    <i class="fa-solid fa-layer-group mr-1"></i> <span id="tab-label-layers">Lớp bản đồ</span>
+                </button>
+            </div>
+            
+            <!-- Scrollable Sidebar Body Content -->
+            <div class="sidebar-body">
+                
+                <!-- TAB 1: Search Component -->
+                <div class="tab-content" id="tab-search">
+                    <div class="search-container">
+                        <div class="search-input-wrapper">
+                            <i class="fa-solid fa-search"></i>
+                            <input type="text" class="search-input" id="map-search-input" placeholder="Tìm giảng đường, phòng học, khoa...">
+                        </div>
+                        <!-- Search Results Dropdown -->
+                        <div class="search-results-dropdown" id="search-results-list"></div>
+                    </div>
+                    
+                    <div class="filters-container">
+                        <h2 class="filter-title" id="filter-title-label">Danh mục địa điểm</h2>
+                        <div class="filter-badge" onclick="filterPOIs('all')" id="filter-all">
+                            <div class="filter-left">
+                                <i class="fa-solid fa-border-all"></i>
+                                <span id="filter-label-all">Tất cả địa điểm</span>
+                            </div>
+                            <span class="filter-count" id="count-all">0</span>
+                        </div>
+                        <div class="filter-badge" onclick="filterPOIs('building')" id="filter-building">
+                            <div class="filter-left">
+                                <i class="fa-solid fa-building"></i>
+                                <span id="filter-label-building">Giảng đường / Tòa nhà</span>
+                            </div>
+                            <span class="filter-count" id="count-building">0</span>
+                        </div>
+                        <div class="filter-badge" onclick="filterPOIs('utility')" id="filter-utility">
+                            <div class="filter-left">
+                                <i class="fa-solid fa-concierge-bell"></i>
+                                <span id="filter-label-utility">Tiện ích / Dịch vụ</span>
+                            </div>
+                            <span class="filter-count" id="count-utility">0</span>
+                        </div>
+                        <div class="filter-badge" onclick="filterPOIs('parking')" id="filter-parking">
+                            <div class="filter-left">
+                                <i class="fa-solid fa-square-parking"></i>
+                                <span id="filter-label-parking">Bãi giữ xe</span>
+                            </div>
+                            <span class="filter-count" id="count-parking">0</span>
+                        </div>
+                        <div class="filter-badge" onclick="filterPOIs('landscape')" id="filter-landscape">
+                            <div class="filter-left">
+                                <i class="fa-solid fa-tree"></i>
+                                <span id="filter-label-landscape">Cảnh quan / Check-in</span>
+                            </div>
+                            <span class="filter-count" id="count-landscape">0</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- TAB 2: Directions Routing Panel -->
+                <div class="tab-content hidden" id="tab-route">
+                    <div class="routing-panel">
+                        <div class="routing-input-group">
+                            <button class="swap-route-btn" id="swap-route-btn" onclick="swapStartEnd()" title="Đổi chiều đường đi">
+                                <i class="fa-solid fa-arrow-up-down"></i>
+                            </button>
+                            <div class="route-node-input">
+                                <label id="label-route-from">Điểm xuất phát</label>
+                                <select class="route-select" id="route-start-select">
+                                    <option value="" id="opt-start-select">-- Chọn điểm xuất phát --</option>
+                                    <!-- Populated dynamically -->
+                                </select>
+                            </div>
+                            <div class="route-node-input" style="margin-top: 8px;">
+                                <label id="label-route-to">Điểm đến</label>
+                                <select class="route-select" id="route-end-select">
+                                    <option value="" id="opt-end-select">-- Chọn điểm đến --</option>
+                                    <!-- Populated dynamically -->
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <!-- Route Stats Summary -->
+                        <div class="route-summary hidden" id="route-summary-panel">
+                            <div class="summary-stats">
+                                <div class="stat-item">
+                                    <i class="fa-solid fa-person-walking text-xl"></i>
+                                    <div>
+                                        <span id="route-distance">0 m</span>
+                                    </div>
+                                </div>
+                                <div class="stat-item">
+                                    <i class="fa-solid fa-clock text-xl"></i>
+                                    <div>
+                                        <span id="route-time">0 phút</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- GPS simulator activation -->
+                            <button class="gps-nav-btn mt-3" id="gps-simulate-btn" onclick="toggleGpsSimulation()">
+                                <i class="fa-solid fa-location-arrow"></i>
+                                <span id="gps-btn-label">Bắt đầu GPS giả lập</span>
+                            </button>
+                        </div>
+                        
+                        <!-- Routing Steps Navigation -->
+                        <div class="instructions-list" id="route-instructions-container">
+                            <p style="text-align: center; color: var(--text-muted); font-size: 13px;" id="instructions-placeholder">
+                                Vui lòng chọn điểm xuất phát và điểm đến để hiển thị đường đi ngắn nhất.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- TAB 3: Layer Toggles -->
+                <div class="tab-content hidden" id="tab-layers">
+                    <h2 class="filter-title" id="layers-title-label">Hiển thị lớp dữ liệu</h2>
+                    <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 10px;">
+                        <label class="filter-badge" style="cursor: pointer; display: flex;">
+                            <div class="filter-left">
+                                <input type="checkbox" id="layer-show-buildings" checked onchange="toggleMapLayer('building')">
+                                <span id="layer-label-buildings">Tòa nhà & Giảng đường</span>
+                            </div>
+                        </label>
+                        <label class="filter-badge" style="cursor: pointer; display: flex;">
+                            <div class="filter-left">
+                                <input type="checkbox" id="layer-show-utilities" checked onchange="toggleMapLayer('utility')">
+                                <span id="layer-label-utilities">Tiện ích sinh viên</span>
+                            </div>
+                        </label>
+                        <label class="filter-badge" style="cursor: pointer; display: flex;">
+                            <div class="filter-left">
+                                <input type="checkbox" id="layer-show-parking" checked onchange="toggleMapLayer('parking')">
+                                <span id="layer-label-parking">Nhà giữ xe máy</span>
+                            </div>
+                        </label>
+                        <label class="filter-badge" style="cursor: pointer; display: flex;">
+                            <div class="filter-left">
+                                <input type="checkbox" id="layer-show-landscapes" checked onchange="toggleMapLayer('landscape')">
+                                <span id="layer-label-landscapes">Cảnh quan cảnh nghệ</span>
+                            </div>
+                        </label>
+                        <label class="filter-badge" style="cursor: pointer; display: flex;">
+                            <div class="filter-left">
+                                <input type="checkbox" id="layer-show-roads" checked onchange="toggleRoadNetwork()">
+                                <span id="layer-label-roads">Hiển thị đường nối (Graph Paths)</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+                
+            </div>
+        </aside>
+        
+        <!-- Right Map Viewport Area -->
+        <main class="map-viewport">
+            <!-- Leaflet Container -->
+            <div id="map"></div>
+            
+            <!-- Map Widgets (Overlays) -->
+            <div class="map-widgets">
+                <!-- Map Legend -->
+                <div class="widget-card">
+                    <div class="legend-title" id="legend-title-label">Chú giải bản đồ</div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #1e3a8a;"></div>
+                        <span id="legend-building">Giảng đường G</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #10b981;"></div>
+                        <span id="legend-utility">Tiện ích / Căng tin</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #f59e0b;"></div>
+                        <span id="legend-parking">Nhà giữ xe</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #8b5cf6;"></div>
+                        <span id="legend-landscape">Cảnh quan hồ nước</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #ef4444;"></div>
+                        <span id="legend-gate">Cổng trường</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Bottom Detail Panel of focused POI -->
+            <div class="detail-panel" id="poi-detail-panel">
+                <button class="detail-close-btn" onclick="closeDetailPanel()" title="Đóng thông tin">
+                    <i class="fa-solid fa-times"></i>
+                </button>
+                <div class="detail-image" id="poi-detail-image" style="background-image: url('ntu_campus_banner.png');"></div>
+                <div class="detail-body">
+                    <span class="detail-badge" id="poi-detail-category" style="background-color: var(--accent);">BUILDING</span>
+                    <h2 class="detail-title" id="poi-detail-title">Giảng đường G7</h2>
+                    <p class="detail-desc" id="poi-detail-desc">Mô tả chi tiết về giảng đường G7...</p>
+                    
+                    <div id="poi-detail-departments-container" class="hidden">
+                        <h3 class="detail-section-title" id="section-label-departments">Khoa & Bộ môn</h3>
+                        <div class="detail-list" id="poi-detail-departments-list">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                    
+                    <div id="poi-detail-rooms-container" class="hidden">
+                        <h3 class="detail-section-title" id="section-label-rooms">Danh sách phòng học</h3>
+                        <div class="detail-list" id="poi-detail-rooms-list">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                    
+                    <!-- Quick action buttons -->
+                    <div class="detail-actions">
+                        <button class="detail-btn detail-btn-primary" id="btn-action-route-to" onclick="setRouteDestination()">
+                            <i class="fa-solid fa-location-dot"></i> <span id="btn-label-route-to">Dẫn đường đến đây</span>
+                        </button>
+                        <button class="detail-btn detail-btn-secondary hidden" id="btn-action-indoor" onclick="openIndoorMap()">
+                            <i class="fa-solid fa-map"></i> <span id="btn-label-indoor">Xem sơ đồ tầng</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+        
+    </div>
+
+    <!-- Indoor Floor Plan Overlay Modal -->
+    <div class="indoor-modal" id="indoor-map-modal">
+        <div class="indoor-modal-content">
+            <div class="indoor-modal-header">
+                <h2 class="indoor-modal-title">
+                    <i class="fa-solid fa-map"></i> 
+                    <span id="indoor-building-title">Sơ đồ tầng Giảng đường G7</span>
+                </h2>
+                <button class="indoor-modal-close" onclick="closeIndoorMap()">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="indoor-modal-body">
+                <!-- Floor selector tabs -->
+                <div class="floor-selector" id="indoor-floor-selector">
+                    <!-- Populated dynamically -->
+                </div>
+                
+                <!-- Floor layout grid -->
+                <div class="indoor-layout-grid">
+                    <!-- Left: Interactive SVG canvas -->
+                    <div class="svg-canvas-container" id="indoor-svg-container">
+                        <!-- SVG map rendered here -->
+                    </div>
+                    
+                    <!-- Right: Info Panel of selected room -->
+                    <div class="room-info-panel">
+                        <div class="info-card-indoor" id="indoor-room-info-card-empty">
+                            <h3 id="label-indoor-details-title">Chi tiết phòng học</h3>
+                            <p style="color: var(--text-muted);" id="label-indoor-placeholder">Nhấp chọn một phòng học trên sơ đồ để xem thông tin chi tiết.</p>
+                        </div>
+                        <div class="info-card-indoor hidden" id="indoor-room-info-card">
+                            <h3 id="indoor-room-title">Phòng G7.202</h3>
+                            <p id="indoor-room-desc">Mô tả phòng học...</p>
+                            <div id="indoor-room-capacity" style="font-size: 13px; margin-top: 8px;">
+                                <i class="fa-solid fa-users text-teal-500 mr-2"></i>Sức chứa: <strong>70 sinh viên</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaflet JS Library -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" 
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" 
+            crossorigin=""></script>
+            
+    <!-- Scripts components -->
+    <script src="data.js"></script>
+    <script src="routing.js"></script>
+    <script src="indoor.js"></script>
+    <script src="gps.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
