@@ -1,5 +1,7 @@
 # 🗺️ Map_NTU - Giải pháp Bản đồ số và Chỉ đường Nội khu Đại học Nha Trang
 
+Live Page: https://vohoaibuyt.github.io/Map_NTU/
+
 **Map_NTU** là một ứng dụng web bản đồ tương tác (Interactive Web Map) được thiết kế chuyên biệt cho khuôn viên Trường Đại học Nha Trang (NTU) trên đồi La San. Dự án giải quyết bài toán tìm kiếm vị trí, số phòng học, giảng đường và tối ưu hóa tuyến đường di chuyển nội khu dành cho tân sinh viên, giảng viên và khách tham quan.
 
 ### 🚀 Tính năng cốt lõi
